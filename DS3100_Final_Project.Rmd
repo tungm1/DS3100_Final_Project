@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # 1: Research Question
 ```{r}
-
+print("hihi")
 ```
 
 # 2: Dataset and Data Wrangling
