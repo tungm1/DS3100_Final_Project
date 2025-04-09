@@ -9,5 +9,46 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+# Final Project
+
+# 1: Research Question
+```{r}
+
+```
+
+# 2: Dataset and Data Wrangling
+```{r}
+
+```
+
+# 3: Visualize Variables
+```{r}
+
+```
+
+# 4: Regression Models
+```{r}
+
+```
+
+# 5: Regression Model Visualization
+```{r}
+
+```
+
+# 6: Advanced Topics
+```{r}
+
+```
+
+# 7: Advanced Topic Visualization
+```{r}
+
+```
+
+# 8: Conclusion
+```{r}
+
+```
+
 
