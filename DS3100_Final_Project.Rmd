@@ -27,8 +27,22 @@ library(ggplot2)
 library(factoextra)
 ```
 
+# Load Data and Data Wrangling
 ```{r}
 sleep <- read.csv("/Users/michaeltung/Desktop/DS_3100/DS3100_Final_Project/Sleep_health_and_lifestyle_dataset.csv")
+
+# Load and clean for linear regression section
+
+# Load and clean for logistic regression section
+
+# Load and clean for Advanced Topics Section
+sleepPCA <- sleep %>%
+  clean_names(case = "small_camel") %>%
+  select(sleepDisorder, physicalActivityLevel, stressLevel, sleepDuration) %>%
+  drop_na() %>%
+  mutate(
+    sleepDisorder = as.factor(ifelse(sleepDisorder == "None", 0, 1))
+  )
 ```
 
 ## 3: Visualize Variables
@@ -48,22 +62,14 @@ sleep <- read.csv("/Users/michaeltung/Desktop/DS_3100/DS3100_Final_Project/Sleep
 
 ## 6: Advanced Topics
 ```{r}
-
-
-# Load and clean
-sleepPCA <- sleep %>%
-  clean_names(case = "small_camel") %>%
-  select(sleepDisorder, physicalActivityLevel, stressLevel, sleepDuration) %>%
-  drop_na() %>%
-  mutate(
-    sleepDisorder = as.factor(ifelse(sleepDisorder == "None", 0, 1))
-  )
-
+# PCA
 pca_input <- sleepPCA %>% select(-sleepDisorder)
 
 pca_result <- prcomp(pca_input, center = TRUE, scale. = TRUE)
 
 summary(pca_result)
+
+# Clustering
 ```
 
 ## 7: Advanced Topic Visualization
