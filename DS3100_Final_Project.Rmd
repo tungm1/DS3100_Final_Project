@@ -12,16 +12,19 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Final Project
 
 ## 1: Research Question
-```{r}
-print("hihi")
-print("btrhbtr")
-```
+
+How do the factors of age, BMI, and daily steps affect quality of sleep? (Linear)
+
+Which factor – physical activity level, stress level, and sleep duration – has the strongest association with developing a sleep disorder? (Logistic)	
 
 ## 2: Dataset and Data Wrangling
 
 # Load Packages
 ```{r}
-
+library(tidyverse)
+library(janitor)
+library(ggplot2)
+library(factoextra)
 ```
 
 ```{r}
@@ -46,11 +49,26 @@ sleep <- read.csv("/Users/michaeltung/Desktop/DS_3100/DS3100_Final_Project/Sleep
 ## 6: Advanced Topics
 ```{r}
 
+
+# Load and clean
+sleepPCA <- sleep %>%
+  clean_names(case = "small_camel") %>%
+  select(sleepDisorder, physicalActivityLevel, stressLevel, sleepDuration) %>%
+  drop_na() %>%
+  mutate(
+    sleepDisorder = as.factor(ifelse(sleepDisorder == "None", 0, 1))
+  )
+
+pca_input <- sleepPCA %>% select(-sleepDisorder)
+
+pca_result <- prcomp(pca_input, center = TRUE, scale. = TRUE)
+
+summary(pca_result)
 ```
 
 ## 7: Advanced Topic Visualization
 ```{r}
-
+factoextra::fviz_eig(pca_result)
 ```
 
 ## 8: Conclusion
