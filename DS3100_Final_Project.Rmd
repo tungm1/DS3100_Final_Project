@@ -9,45 +9,51 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Final Project
+## Final Project
 
-# 1: Research Question
+## 1: Research Question
 ```{r}
 print("hihi")
 print("btrhbtr")
 ```
 
-# 2: Dataset and Data Wrangling
+## 2: Dataset and Data Wrangling
+
+# Load Packages
 ```{r}
 
 ```
 
-# 3: Visualize Variables
+```{r}
+sleep <- read.csv("/Users/michaeltung/Desktop/DS_3100/DS3100_Final_Project/Sleep_health_and_lifestyle_dataset.csv")
+```
+
+## 3: Visualize Variables
 ```{r}
 
 ```
 
-# 4: Regression Models
+## 4: Regression Models
 ```{r}
 
 ```
 
-# 5: Regression Model Visualization
+## 5: Regression Model Visualization
 ```{r}
 
 ```
 
-# 6: Advanced Topics
+## 6: Advanced Topics
 ```{r}
 
 ```
 
-# 7: Advanced Topic Visualization
+## 7: Advanced Topic Visualization
 ```{r}
 
 ```
 
-# 8: Conclusion
+## 8: Conclusion
 ```{r}
 
 ```
