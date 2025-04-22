@@ -70,11 +70,56 @@ pca_result <- prcomp(pca_input, center = TRUE, scale. = TRUE)
 summary(pca_result)
 
 # Clustering
+# Calculate % variance explained for PC1 and PC2
+pc_var <- summary(pca_result)$importance[2, 1:2]
+pc1_var <- round(pc_var[1] * 100, 1)
+pc2_var <- round(pc_var[2] * 100, 1)
+
+pca_scores <- as.data.frame(pca_result$x[, 1:2]) # First two principal components
+
+kmeans_result <- kmeans(pca_scores, centers = 3, nstart = 25)
+
+# Add cluster labels to PCA scores
+pca_scores$cluster <- as.factor(kmeans_result$cluster)
+
+# Make sure labels are numeric
+true_labels <- as.numeric(sleepPCA$sleepDisorder)
+predicted_clusters <- as.numeric(kmeans_result$cluster)
+
+# ARI: Adjusted Rand Index
+ari_score <- adjustedRandIndex(true_labels, predicted_clusters)
+
+# AMI: Adjusted Mutual Information
+# Use aricode package
+library(aricode)
+ami_score <- AMI(true_labels, predicted_clusters)
+
+# Print results
+print(paste("Adjusted Rand Index (ARI):", round(ari_score, 3)))
+print(paste("Adjusted Mutual Information (AMI):", round(ami_score, 3)))
+
+
 ```
 
 ## 7: Advanced Topic Visualization
 ```{r}
 factoextra::fviz_eig(pca_result)
+
+# Improved PCA Cluster Plot
+ggplot(pca_scores, aes(x = PC1, y = PC2, color = cluster)) +
+  geom_point(size = 2.5, alpha = 0.8) +
+  labs(
+    title = "K-Means Clustering of Sleep Patterns",
+    x = paste0("Principal Component 1 (", pc1_var, "% variance)"),
+    y = paste0("Principal Component 2 (", pc2_var, "% variance)"),
+    color = "Cluster"
+  ) +
+  theme_minimal(base_size = 14) +
+  scale_color_brewer(palette = "Set2")
+
+# Plot WSS (Elbow method)
+fviz_nbclust(pca_scores[, 1:2], kmeans, method = "wss") +
+  labs(title = "Elbow Method for Optimal k (PCA-Reduced Features)")
 ```
 
 ## 8: Conclusion
