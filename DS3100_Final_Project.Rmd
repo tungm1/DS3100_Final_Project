@@ -11,11 +11,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Final Project
 
-## 1: Research Question
+## 1: Research Questions
 
-How do the factors of age, BMI, and daily steps affect quality of sleep? (Linear)
+In this project, we will be investigating the following research questions:
 
-Which factor – physical activity level, stress level, and sleep duration – has the strongest association with developing a sleep disorder? (Logistic)	
+1. Which factor – participants' age, BMI category, or the number of daily steps taken – has the strongest relationship with participants' quality of sleep? (Linear)
+
+2. Which factor – physical activity level, stress level, or sleep duration – has the strongest association with developing a sleep disorder? (Logistic)
 
 ## 2: Dataset and Data Wrangling
 
@@ -29,13 +31,31 @@ library(mclust)
 library(aricode)
 ```
 
-# Load Data and Data Wrangling
+# Load Data, Data Overview, and Basic Data Wrangling
 ```{r}
-sleep <- read.csv("/Users/michaeltung/Desktop/DS_3100/DS3100_Final_Project/Sleep_health_and_lifestyle_dataset.csv")
+# Loading the "Sleep_health_and_lifestyle_dataset.csv" file and performing data overview.
+# sleep <- read.csv("/Users/michaeltung/Desktop/DS_3100/DS3100_Final_Project/Sleep_health_and_lifestyle_dataset.csv")
+# View(sleep)
 
-# Load and clean for linear regression section
+lapply(sleep, class)
+str(sleep)
 
-# Load and clean for logistic regression section
+dim(sleep)
+sapply(sleep, function(x) sum(is.na(x)))
+
+
+# Load and clean for Linear Regression Section
+sleepLinear <- sleep %>%
+  clean_names(case = "small_camel") %>%
+  select(bmiCategory, dailySteps, qualityOfSleep)
+
+
+# Load and clean for Logistic Regression Section
+sleepLogistic <- sleep %>%
+  clean_names(case = "small_camel") %>%
+  mutate(sleepDisorder = as.factor(ifelse(sleepDisorder == "None", "No", "Yes"))) %>%
+  select(physicalActivityLevel, stressLevel, sleepDuration, sleepDisorder)
+
 
 # Load and clean for Advanced Topics Section
 sleepPCA <- sleep %>%
@@ -47,22 +67,230 @@ sleepPCA <- sleep %>%
   )
 ```
 
-## 3: Visualize Variables
+## 3A: Visualize Variables (Linear Regression)
 ```{r}
+# Visualizing the predictor variable `age` and the response variable `qualityOfSleep`
 
+# `age`: Numeric, continuous variable
+# `qualityOfSleep`: Numeric, continuous variable
+
+sleepLinear %>%
+ggplot(aes(x = age, y = qualityOfSleep)) +
+  geom_jitter(width = 0.2, height = 0.2) +
+  geom_smooth(method = "lm") +
+  labs(title = "Relating Participants' Age and Sleep Quality",
+       x = "Age of Participants",
+       y = "Hours of Sleep Received by Participants") +
+  theme_minimal()
+
+
+# Visualizing the predictor variable `bmiCategory` and the response variable
+# `qualityOfSleep`
+
+# `bmiCategory`: Character, categorical variable
+# `qualityOfSleep`: Numeric, continuous variable
+
+sleepLinear %>%
+ggplot(aes(x = bmiCategory, y = qualityOfSleep)) +
+  geom_boxplot() +
+  labs(title = "Relating Participants' BMI Category and Sleep Quality",
+       x = "BMI Category of Participants",
+       y = "Hours of Sleep Received by Participants") +
+  theme_minimal()
+
+
+# Visualizing the predictor variable `dailySteps` and the response variable
+# `qualityOfSleep`
+
+# `Daily Steps`: Numeric, continuous variable
+# `Quality of Sleep`: Numeric, continuous variable
+
+sleepLinear %>%
+ggplot(aes(x = dailySteps, y = qualityOfSleep)) +
+  geom_jitter(width = 0.2, height = 0.2) +
+  geom_smooth(method = "lm") +
+  labs(title = "Relating Participants' Daily Steps and Sleep Quality",
+       x = "Daily Average Number of Steps Taken by Participants",
+       y = "Hours of Sleep Received by Participants") +
+  theme_minimal()
 ```
 
-## 4: Regression Models
+## 3B: Visualize Variables (Logistic Regression)
 ```{r}
+# Visualizing the predictor variable `physicalActivityLevel` and the response variable
+# `sleepDisorder`
 
+# `physicalActivityLevel`: Numeric, categorical variable (since these represent levels)
+# `sleepDisorder`: Factor, categorical variable
+
+sleepLogistic %>%
+ggplot(aes(x = physicalActivityLevel, y = sleepDisorder)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Relating Participants' Physical Activity Levels with Sleep Disorder",
+       x = "Activity Level of Participants",
+       y = "Whether or Not Participants Have a Sleep Disorder") +
+  theme_minimal()
+
+
+# Visualizing the predictor variable `stressLevel` and the response variable
+# `sleepDisorder`
+
+# `stressLevel`: Numeric, categorical variable (since these represent levels)
+# `sleepDisorder`: Factor, categorical variable
+
+sleepLogistic %>%
+ggplot(aes(x = stressLevel, y = sleepDisorder)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Relating Participants' Stress Levels with Sleep Disorder",
+       x = "Stress Level of Participants",
+       y = "Whether or Not Participants Have a Sleep Disorder") +
+  theme_minimal()
+
+
+# Visualizing the predictor variable `sleepDuration` and the response variable
+# `sleepDisorder`
+
+# `sleepDuration`: Numeric, continuous variable
+# `sleepDisorder`: Factor, categorical variable
+
+sleepLogistic %>%
+ggplot(aes(x = sleepDuration, y = sleepDisorder)) +
+  geom_boxplot() +
+  labs(title = "Relating Participants' Sleep Duration with Sleep Disorder",
+       x = "Sleep Duration (in Hours) of Participants",
+       y = "Whether or Not Participants Have a Sleep Disorder") +
+  theme_minimal()
 ```
 
-## 5: Regression Model Visualization
+## 4A: Regression Model (Linear Regression)
 ```{r}
+# Running a multivariate linear regression on participants' quality of sleep given their
+# age, BMI category, and daily average number of steps taken.
+lm_age_bmi_daily_steps_sleep <- lm(formula = qualityOfSleep ~ age + bmiCategory +
+                                     dailySteps,
+                                   data = sleepLinear)
 
+
+# Printing the output of the above multivariate linear regression model.
+summary(lm_age_bmi_daily_steps_sleep)
+modelsummary(lm_age_bmi_daily_steps_sleep, output = "markdown")
+
+
+# Performing the Shapiro - Wilk test on the residuals (or error terms) of the
+# multivariate linear regression model to investigate normality.
+shapiro.test(residuals(lm_age_bmi_daily_steps_sleep))
+
+
+# Plotting each of the independent variables separately with the multivariate linear
+# regression model's residuals to closely investigate which variable(s) is / are
+# contributing to potential non - linearity, non - normality, and / or
+# heteroscedasticity. These make up our residual plots.
+plot(sleepLinear$age, residuals(lm_age_bmi_daily_steps_sleep))
+
+plot(sleepLinear$bmiCategory, residuals(lm_age_bmi_daily_steps_sleep))
+
+plot(sleepLinear$dailySteps, residuals(lm_age_bmi_daily_steps_sleep))
 ```
 
-## 6: Advanced Topics
+## 4B: Regression Model (Logistic Regression)
+```{r}
+# Performing a logistic binomial regression to predict the log - likelihood of the
+# participants developing a sleep disorder given their physical activity level, stress
+# level, and sleep duration (in hours).
+logistic_binom_sleep_disorder <- glm(formula = sleepDisorder ~ physicalActivityLevel + stressLevel 
+                                     + sleepDuration,
+                                     data = sleepLogistic,
+                                     family = "binomial")
+
+
+# Printing the output of the above logistic binomial regression model.
+summary(logistic_binom_sleep_disorder, output = "markdown")
+```
+
+## 5A: Regression Model Visualization (Linear Regression)
+```{r}
+# Plotting a residuals vs. fitted values plot between the multivariate linear model and
+# its residuals (or error terms) to investigate linearity and homoscedasticity.
+plot(lm_age_bmi_daily_steps_sleep, which = 1)
+
+
+# Plotting a QQ plot (or a probability plot) between the multivariate linear model 
+# (i.e. theoretical quantiles) and its standardized residuals (or error terms) to
+# investigate normality.
+plot(lm_age_bmi_daily_steps_sleep, which = 2)
+
+
+# Plotting a histogram of the distribution of the multivariate linear model's residuals
+# (or error terms) to investigate normality.
+sleepLinear %>%
+  ggplot(aes(x = residuals(lm_age_bmi_daily_steps_sleep))) +
+  geom_histogram(bins = 8) +
+  labs(title = "The Distribution of Participants' Linear Model Residuals",
+       x = "Multivariate Linear Regression Model's Residuals",
+       y = "Count of the Multivariate Regression Model's Residuals")
+```
+
+## 5B: Regression Model Visualization (Logistic Regression)
+```{r}
+# Creating an array of the predictor variables (and intercept) used in the logistic
+# binomial model on the participants. This prints out each variables' `Estimate`,
+# `Std. Error`, `z value`, and `Pr(>|z|)` in a tabular format.
+coef_summary <- summary(logistic_binom_sleep_disorder)$coefficients
+
+
+# Transforming the predictor variables array to a data frame, and making some of the
+# column names more specific.
+coef_df <- data.frame(
+  Variable = rownames(coef_summary),
+  Estimate = coef_summary[, "Estimate"],
+  Standard_Error = coef_summary[, "Std. Error"]
+)
+
+
+# Using the predictor variables data frame to create a bar plot illustrating confidence
+# intervals on each of the light green variables' estimates (including the intercept).
+coef_df %>%
+  ggplot(aes(x = Variable, y = Estimate)) +
+  geom_col(fill = "lightgreen") +
+  geom_errorbar(aes(ymin = Estimate - Standard_Error, ymax = Estimate + Standard_Error),
+                width = 0.2) +
+  coord_flip() +
+  labs(title = "Coefficient Estimates on the Participants", 
+       subtitle = "Physical Activity, Stress, and Sleep Duration on Sleep Disorder",
+       x = "Variable",
+       y = "Coefficient Estimate") +
+  theme_minimal()
+```
+
+## 6: Correlation Analyses for **Linear Regression**
+```{r}
+# Performing a Pearson correlation between the numeric variables `age` and participants'
+# quality of sleep.
+age_quality_sleep_pearson <- cor(sleepLinear$age,
+                                 sleepLinear$qualityOfSleep,
+                                 method = "pearson")
+print(age_quality_sleep_pearson)
+
+
+# Performing Spearman's rank correlation between the categorical variable `bmiCategory`
+# and participants' quality of sleep (numeric variable).
+sleepLinear$bmiCategory <- as.numeric(sleepLinear$bmiCategory)
+
+bmi_quality_sleep_spearman <- cor(sleepLinear$bmiCategory,
+                                  sleepLinear$qualityOfSleep,
+                                  method = "spearman")
+print(bmi_quality_sleep_spearman)
+
+
+# Performing a Pearson correlation between the numeric variables `dailySteps` and
+# participants' quality of sleep.
+daily_steps_quality_sleep_pearson <- cor(sleepLinear$dailySteps,
+                                         sleepLinear$qualityOfSleep,
+                                         method = "pearson")
+print(daily_steps_quality_sleep_pearson)
+```
+
+## 7: Advanced Topics
 ```{r}
 # PCA
 pca_input <- sleepPCA %>% select(-sleepDisorder)
@@ -102,7 +330,7 @@ print(paste("Adjusted Rand Index (ARI):", round(ari_score, 3)))
 print(paste("Adjusted Mutual Information (AMI):", round(ami_score, 3)))
 ```
 
-## 7: Advanced Topic Visualization
+## 8: Advanced Topic Visualization
 ```{r}
 factoextra::fviz_eig(pca_result)
 
@@ -123,10 +351,10 @@ ggplot(pca_scores, aes(x = PC1, y = PC2, color = cluster)) +
   scale_color_brewer(palette = "Set2")
 ```
 
-## 8: Conclusion
+## 9: Conclusion
+
+Linear and Logistic Regression Conclusion:
 
 Clustering and PCA conclusion:
 
 The PCA results demonstrated that roughly two components can explain 94% of the variation in the data (between the three variables physicalActivityLevel, stressLevel, sleepDuration). The result of the PCA was plotted using the Scree plot where we see dimension 3 is significantly lower than dimensions 1 and 2. Using the rotation matrix of the pca results, we see that PC1 is likely quality of sleep, since it is most explained by sleep duration, and PC2 is likely physical activity level, since it is most explained by physicalActivityLevel. Since the Adjusted Rand Index and Adjusted Mutual Information are relatively low, the clusters derived from behavioral data do not strongly align with diagnosed sleep disorders.
-
-
