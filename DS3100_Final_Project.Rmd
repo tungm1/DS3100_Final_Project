@@ -34,8 +34,8 @@ library(aricode)
 # Load Data, Data Overview, and Basic Data Wrangling
 ```{r}
 # Loading the "Sleep_health_and_lifestyle_dataset.csv" file and performing data overview.
-# sleep <- read.csv("/Users/michaeltung/Desktop/DS_3100/DS3100_Final_Project/Sleep_health_and_lifestyle_dataset.csv")
-# View(sleep)
+sleep <- read.csv("/Users/michaeltung/Desktop/DS_3100/DS3100_Final_Project/Sleep_health_and_lifestyle_dataset.csv")
+View(sleep)
 
 lapply(sleep, class)
 str(sleep)
@@ -47,7 +47,7 @@ sapply(sleep, function(x) sum(is.na(x)))
 # Load and clean for Linear Regression Section
 sleepLinear <- sleep %>%
   clean_names(case = "small_camel") %>%
-  select(bmiCategory, dailySteps, qualityOfSleep)
+  select(age, bmiCategory, dailySteps, qualityOfSleep)
 
 
 # Load and clean for Logistic Regression Section
@@ -187,7 +187,8 @@ shapiro.test(residuals(lm_age_bmi_daily_steps_sleep))
 # heteroscedasticity. These make up our residual plots.
 plot(sleepLinear$age, residuals(lm_age_bmi_daily_steps_sleep))
 
-plot(sleepLinear$bmiCategory, residuals(lm_age_bmi_daily_steps_sleep))
+sleepLinear$bmiCategory <- factor(sleepLinear$bmiCategory)
+boxplot(residuals(lm_age_bmi_daily_steps_sleep) ~ sleepLinear$bmiCategory)
 
 plot(sleepLinear$dailySteps, residuals(lm_age_bmi_daily_steps_sleep))
 ```
