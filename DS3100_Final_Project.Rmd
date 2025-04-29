@@ -2,7 +2,14 @@
 title: "DS3100_Final_Project"
 author: "Michael Tung, Devanshu Maniar, Paterne Migwaguro"
 date: "2025-04-09"
-output: html_document
+output:
+  word_document: default
+  pdf_document:
+    template: mytemplate.tex
+    df_print: default
+  html_document:
+    self_contained: true
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
