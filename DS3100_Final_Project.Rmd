@@ -34,11 +34,11 @@ library(aricode)
 # Load Data, Data Overview, and Basic Data Wrangling
 ```{r}
 # Loading the "Sleep_health_and_lifestyle_dataset.csv" file and performing data overview.
-sleep <- read.csv("/Users/michaeltung/Desktop/DS_3100/DS3100_Final_Project/Sleep_health_and_lifestyle_dataset.csv")
-View(sleep)
+sleep <- read.csv("Sleep_health_and_lifestyle_dataset.csv")
+#View(sleep)
 
 lapply(sleep, class)
-str(sleep)
+#str(sleep)
 
 dim(sleep)
 sapply(sleep, function(x) sum(is.na(x)))
@@ -56,6 +56,16 @@ sleepLogistic <- sleep %>%
   mutate(sleepDisorder = as.factor(ifelse(sleepDisorder == "None", "No", "Yes"))) %>%
   select(physicalActivityLevel, stressLevel, sleepDuration, sleepDisorder)
 
+# Load and clean for Ordered Logistic Regression Section
+sleepOLR <- sleep %>%
+  clean_names(case = "small_camel") %>%
+  select(bmiCategory, dailySteps, qualityOfSleep, occupation, gender, age)
+
+sleepOLR$qualityOfSleep <- ordered(sleepOLR$qualityOfSleep)
+sleepOLR$bmiCategory <- as.factor(sleepOLR$bmiCategory)
+sleepOLR$occupation <- as.factor(sleepOLR$occupation)
+sleepOLR$gender <- as.factor(sleepOLR$gender)
+
 
 # Load and clean for Advanced Topics Section
 sleepPCA <- sleep %>%
@@ -65,6 +75,8 @@ sleepPCA <- sleep %>%
   mutate(
     sleepDisorder = as.factor(ifelse(sleepDisorder == "None", 0, 1))
   )
+
+
 ```
 
 ## 3A: Visualize Variables (Linear Regression)
