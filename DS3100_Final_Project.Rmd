@@ -9,15 +9,49 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Final Project
+# Final Project
 
-## 1: Research Questions
+## 1: Introduction, Research Questions, and Discussion of Data
 
-In this project, we will be investigating the following research questions:
+### Introduction
+
+According to the American Psychiatric Association, more than 50 million Americans have chronic sleep disorders. Researching ways to increase sleep quality and reduce sleep disorders is a great way to reduce this number. In this project, we will be investigating the following research questions:
+
+### Research Questions
 
 1. Which factor – participants' age, BMI category, or the number of daily steps taken – has the strongest relationship with participants' quality of sleep? (Linear)
 
 2. Which factor – physical activity level, stress level, or sleep duration – has the strongest association with developing a sleep disorder? (Logistic)
+
+### Discussion of Data
+
+This data was obtained from Kaggle and it presents several helpful variables, all of which are related to sleep. It is unclear where the data first originated from, however, it likely came from a sleep study. Our purpose for the data is to use it to identify our research questions.
+
+Our variables of interest are:
+
+age - the age of a person (continuous)
+
+bmiCategory - BMI of a person (categorical)
+
+dailySteps - Number of steps taken daily by a person (continuous)
+
+qualityOfSleep - Quality of sleep for a person (cateogorical, higher the better)
+
+physicalActivityLevel - Quality of phyical activity a person gets per day (categorical, higher the better)
+
+stressLevel - Stress level of a person (categorical, higher stress level means higher stress)
+
+sleepDuration - Hours of sleep a person gets (continuous)
+
+sleepDisorder - Whether or not a person has a sleep disorder, 1 for yes, 0 for no (Binary)
+
+### Breakdown of Work
+
+- Devanshu Maniar (Linear Regression, Simple Logistical Regression)
+
+- Paterne Migwaguro (Advanced Regression)
+
+- Michael Tung (Advanced Topics Analysis)
 
 ## 2: Dataset and Data Wrangling
 
@@ -35,6 +69,8 @@ library(nnet)
 library(patchwork)
 library(scales)
 library(broom)
+library(modelsummary)
+library(effects)
 ```
 
 # Load Data, Data Overview, and Basic Data Wrangling
@@ -46,6 +82,8 @@ sleep <- read.csv("Sleep_health_and_lifestyle_dataset.csv")
 lapply(sleep, class)
 #str(sleep)
 
+colnames(sleep)
+
 dim(sleep)
 sapply(sleep, function(x) sum(is.na(x)))
 
@@ -53,7 +91,7 @@ sapply(sleep, function(x) sum(is.na(x)))
 # Load and clean for Linear Regression Section
 sleepLinear <- sleep %>%
   clean_names(case = "small_camel") %>%
- select(age, bmiCategory, dailySteps, qualityOfSleep)
+  select(age, bmiCategory, dailySteps, qualityOfSleep)
 
 
 # Load and clean for Logistic Regression Section
@@ -107,27 +145,6 @@ sleepPCA <- sleep %>%
 
 ```
 
-## Discussion of Data
-
-This data was obtained from Kaggle and it presents several helpful variables, all of which are related to sleep. It is unclear where the data first originated from, however, it likely came from a sleep study. Our purpose for the data is to use it to identify our research questions.
-
-Our variables of interest are:
-
-age - the age of a person (continuous)
-
-bmiCategory - BMI of a person (categorical)
-
-dailySteps - Number of steps taken daily by a person (continuous)
-
-qualityOfSleep - Quality of sleep for a person (cateogorical, higher the better)
-
-physicalActivityLevel - Quality of phyical activity a person gets per day (categorical, higher the better)
-
-stressLevel - Stress level of a person (categorical, higher stress level means higher stress)
-
-sleepDuration - Hours of sleep a person gets (continuous)
-
-sleepDisorder - Whether or not a person has a sleep disorder, 1 for yes, 0 for no (Binary)
 
 ## 3A: Visualize Variables (Linear Regression)
 ```{r}
@@ -325,7 +342,7 @@ coef_df %>%
   theme_minimal()
 ```
 
-## 6: Correlation Analyses for **Linear Regression**
+## 6: Correlation Analyses for Linear Regression
 ```{r}
 # Performing a Pearson correlation between the numeric variables `age` and participants'
 # quality of sleep.
@@ -448,10 +465,6 @@ print(combined_plot)
 
 ```
 
-
-The multinomial logistic regression model reveals that among the predictors examined, stress level exhibits the strongest positive association with both insomnia and sleep apnea: the coefficient plot shows statistically significant positive estimates for stress level in both disorder categories, indicating that as stress increases, the odds of reporting insomnia or sleep apnea (relative to no disorder) rise sharply. Conversely, higher physical activity level and longer sleep duration are associated with lower odds of sleep apnea, as reflected by their negative coefficients, though their effects on insomnia are weaker and less consistently significant. The predicted probability plots reinforce these findings visually: as stress level increases, the probability of having no sleep disorder drops markedly while the probabilities of insomnia and sleep apnea both rise, with insomnia showing the steepest increase. Similarly, as physical activity level increases, the probability of sleep apnea decreases and the likelihood of having no disorder rises. These results directly answer the research question by demonstrating, with both statistical estimates and clear visual trends, that stress reduction and increased physical activity are likely important for lowering the risk of specific sleep disorders in this population.
-
-
 ## 8: Modeling Sleep Quality with Ordered Logistic Regression
 ```{r}
 # Fit ordered logistic regression for sleep quality on demographic and lifestyle predictors
@@ -478,10 +491,6 @@ ggplot(sleepQualityOLR_tidy, aes(x = estimate, y = reorder(term, estimate))) +
   theme_minimal()
 
 ```
-
-
-The ordered logistic regression model evaluates the relationship between age, BMI category, daily steps, occupation, and gender with sleep quality. Age shows a strong positive association with better sleep quality (estimate = 4.47, t = 11.96), suggesting that older individuals are significantly more likely to report higher sleep quality levels. In contrast, higher daily steps are modestly associated with lower sleep quality (estimate = –0.35, t = –2.12), though the effect size is small. BMI categories show strong negative impacts: being overweight (estimate = –7.03, t = –9.55) or obese (estimate = –5.43, t = –5.35) is significantly associated with worse sleep quality compared to the baseline BMI group, while normal weight shows no significant difference (t = –0.98). Occupation also plays a role; engineers (estimate = –1.95, t = –2.24), nurses (estimate = –2.02, t = –2.88), and salespeople (estimate = –3.19, t = –2.91) are notably more likely to report poorer sleep compared to the reference occupation. Gender, specifically being male, shows a positive but statistically insignificant effect on sleep quality (estimate = 1.05, t = 1.41). Overall, age and BMI are the strongest predictors in this model, with daily steps and certain occupations also contributing meaningfully to variations in reported sleep quality.
-
 
 ## 9: Advanced Topics
 ```{r}
@@ -575,6 +584,10 @@ Overall, to answer the research question, we have the following:
 (Linear) Among participants' age, BMI category, and the number of daily steps taken, the variable that has the strongest relationship with participants' quality of sleep is `age`. This conclusion is made after taking into account model homoscedasticity, a clear, positive trend from its linear model, and model normality that this variable satisfies.
 
 (Logistic) Among participants' physical activity level, stress level, or sleep duration, the variable that has the strongest association with developing a sleep disorder is `sleepDuration` as shown by the greatest change in the odds ratio and its large coefficient estimate relative to any other predictor variable.
+
+(Multinomial Logistic Regression) The multinomial logistic regression model reveals that among the predictors examined, stress level exhibits the strongest positive association with both insomnia and sleep apnea: the coefficient plot shows statistically significant positive estimates for stress level in both disorder categories, indicating that as stress increases, the odds of reporting insomnia or sleep apnea (relative to no disorder) rise sharply. Conversely, higher physical activity level and longer sleep duration are associated with lower odds of sleep apnea, as reflected by their negative coefficients, though their effects on insomnia are weaker and less consistently significant. The predicted probability plots reinforce these findings visually: as stress level increases, the probability of having no sleep disorder drops markedly while the probabilities of insomnia and sleep apnea both rise, with insomnia showing the steepest increase. Similarly, as physical activity level increases, the probability of sleep apnea decreases and the likelihood of having no disorder rises. These results directly answer the research question by demonstrating, with both statistical estimates and clear visual trends, that stress reduction and increased physical activity are likely important for lowering the risk of specific sleep disorders in this population.
+
+The ordered logistic regression model evaluates the relationship between age, BMI category, daily steps, occupation, and gender with sleep quality. Age shows a strong positive association with better sleep quality (estimate = 4.47, t = 11.96), suggesting that older individuals are significantly more likely to report higher sleep quality levels. In contrast, higher daily steps are modestly associated with lower sleep quality (estimate = –0.35, t = –2.12), though the effect size is small. BMI categories show strong negative impacts: being overweight (estimate = –7.03, t = –9.55) or obese (estimate = –5.43, t = –5.35) is significantly associated with worse sleep quality compared to the baseline BMI group, while normal weight shows no significant difference (t = –0.98). Occupation also plays a role; engineers (estimate = –1.95, t = –2.24), nurses (estimate = –2.02, t = –2.88), and salespeople (estimate = –3.19, t = –2.91) are notably more likely to report poorer sleep compared to the reference occupation. Gender, specifically being male, shows a positive but statistically insignificant effect on sleep quality (estimate = 1.05, t = 1.41). Overall, age and BMI are the strongest predictors in this model, with daily steps and certain occupations also contributing meaningfully to variations in reported sleep quality.
 
 Clustering and PCA conclusion:
 
