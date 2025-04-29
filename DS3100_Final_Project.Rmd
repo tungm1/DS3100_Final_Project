@@ -33,6 +33,8 @@ library(tidyverse)
 library(ggeffects)
 library(nnet)
 library(patchwork)
+library(scales)
+library(broom)
 ```
 
 # Load Data, Data Overview, and Basic Data Wrangling
@@ -332,19 +334,27 @@ print(daily_steps_quality_sleep_pearson)
 
 ## 7: Multinomial Logistic Regression For Sleep Disorder
 ```{r}
-# Fit the model 
+# Fitting a multinomial logistic regression model to predict the type of sleep disorder
+# (None, Insomnia, Sleep Apnea, Other) based on participants' physical activity level,
+# stress level, and sleep duration using the cleaned sleepMLR dataframe.
 multi_logit <- multinom(
   sleepDisorderMulti ~ physicalActivityLevel + stressLevel + sleepDuration,
   data = sleepMLR
 )
 
+# Creating a tidy summary table of the multinomial logit model's coefficients,
+# including confidence intervals for each predictor and sleep disorder category.
 multi_logit_summary <- tidy(multi_logit, conf.int = TRUE)
+
 print(multi_logit_summary)
+
 ```
 
 ### Multinomial Logistic Regression Visualization
 ```{r}
-# Filter out intercepts for plotting
+# Creating a tidy summary dataframe of the multinomial logit model coefficients,
+# including confidence intervals, and filtering out the intercept for plotting.
+# Predictor variable names are recoded for readability in the plot.
 coef_plot_df <- multi_logit_summary %>%
   filter(term != "(Intercept)") %>%
   mutate(
@@ -354,7 +364,9 @@ coef_plot_df <- multi_logit_summary %>%
                   sleepDuration = "Sleep Duration")
   )
 
-# Plot: Separate bars for each disorder category vs. None
+# Plotting the coefficient estimates (with ±1 standard error) for each predictor
+# and sleep disorder category (vs. None) from the multinomial logit regression.
+# Bars are grouped by disorder type, with a vertical dashed line at zero for reference.
 ggplot(coef_plot_df, aes(x = estimate, y = term, fill = y.level)) +
   geom_col(position = position_dodge(width = 0.7), width = 0.6) +
   geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, 
@@ -366,12 +378,14 @@ ggplot(coef_plot_df, aes(x = estimate, y = term, fill = y.level)) +
     y = "Predictor",
     fill = "Disorder vs. None"
   ) +
-  theme_minimal(base_size = 14)
+  theme_minimal(base_size = 12)
 
-
-# 1. Predicted probabilities by Stress Level
+# Calculating predicted probabilities for each sleep disorder type as a function of
+# stress level, holding other predictors at their typical values.
 pred_probs_stress <- ggeffect(multi_logit, terms = "stressLevel")
 
+# Creating a line plot (with confidence ribbons) of predicted probabilities for each
+# disorder type across the range of stress levels.
 p1 <- ggplot(pred_probs_stress, aes(x = x, y = predicted, color = group, fill = group)) +
   geom_line(size = 1.2) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.15, color = NA) +
@@ -382,11 +396,14 @@ p1 <- ggplot(pred_probs_stress, aes(x = x, y = predicted, color = group, fill = 
     color = "Disorder",
     fill = "Disorder"
   ) +
-  theme_minimal(base_size = 14)
+  theme_minimal(base_size = 12)
 
-# 2. Predicted probabilities by Physical Activity Level
+# Calculating predicted probabilities for each sleep disorder type as a function of
+# physical activity level, holding other predictors at their typical values.
 pred_probs_activity <- ggeffect(multi_logit, terms = "physicalActivityLevel")
 
+# Creating a line plot (with confidence ribbons) of predicted probabilities for each
+# disorder type across the range of physical activity levels.
 p2 <- ggplot(pred_probs_activity, aes(x = x, y = predicted, color = group, fill = group)) +
   geom_line(size = 1.2) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.15, color = NA) +
@@ -397,41 +414,47 @@ p2 <- ggplot(pred_probs_activity, aes(x = x, y = predicted, color = group, fill 
     color = "Disorder",
     fill = "Disorder"
   ) +
-  theme_minimal(base_size = 14)
+  theme_minimal(base_size = 12)
 
-# Combine the plots side by side
+# Combining the two predicted probability plots (stress level and physical activity level)
+# side by side for direct visual comparison, with a shared overall title.
 combined_plot <- p1 + p2 +
-  plot_annotation(title = "Predicted Probability of Sleep Disorder Types")
+  patchwork::plot_annotation(title = "Predicted Probability of Sleep Disorder Types")
 
-# Print the combined plot
+# Printing the combined plot.
 print(combined_plot)
+
 ```
+
+
+The multinomial logistic regression model reveals that among the predictors examined, stress level exhibits the strongest positive association with both insomnia and sleep apnea: the coefficient plot shows statistically significant positive estimates for stress level in both disorder categories, indicating that as stress increases, the odds of reporting insomnia or sleep apnea (relative to no disorder) rise sharply. Conversely, higher physical activity level and longer sleep duration are associated with lower odds of sleep apnea, as reflected by their negative coefficients, though their effects on insomnia are weaker and less consistently significant. The predicted probability plots reinforce these findings visually: as stress level increases, the probability of having no sleep disorder drops markedly while the probabilities of insomnia and sleep apnea both rise, with insomnia showing the steepest increase. Similarly, as physical activity level increases, the probability of sleep apnea decreases and the likelihood of having no disorder rises. These results directly answer the research question by demonstrating, with both statistical estimates and clear visual trends, that stress reduction and increased physical activity are likely important for lowering the risk of specific sleep disorders in this population.
 
 
 ## 8: Modeling Sleep Quality with Ordered Logistic Regression
 ```{r}
-library(scales)
-library(broom)
-
-# Model of the Ordered Logistic Regresion
-sleepQualityOrderLogitRegression <- polr(qualityOfSleep ~ age + bmiCategory + dailySteps + occupation + gender, 
-                                              data=sleepOLR, Hess=TRUE)
+# Fit ordered logistic regression for sleep quality on demographic and lifestyle predictors
+sleepQualityOrderLogitRegression <- polr(
+  qualityOfSleep ~ age + bmiCategory + dailySteps + occupation + gender, 
+  data = sleepOLR, Hess = TRUE
+)
 summary(sleepQualityOrderLogitRegression)
 
-# Model Visualization
-## Tidy the model
+# Tidy model output and remove threshold (cutpoint) rows for plotting
 sleepQualityOLR_tidy <- broom::tidy(sleepQualityOrderLogitRegression)
 sleepQualityOLR_tidy <- sleepQualityOLR_tidy[!grepl("\\|", sleepQualityOLR_tidy$term), ]
 
-## Plot
+# Plot coefficient estimates with error bars for each predictor
 ggplot(sleepQualityOLR_tidy, aes(x = estimate, y = reorder(term, estimate))) +
   geom_point() +
   geom_errorbarh(aes(xmin = estimate - std.error, xmax = estimate + std.error), height = 0.2) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
-  labs(title = "Ordered Logistic Regression Coefficients",
-       x = "Coefficient Estimate",
-       y = "Predictor") +
+  labs(
+    title = "Ordered Logistic Regression Coefficients",
+    x = "Coefficient Estimate",
+    y = "Predictor"
+  ) +
   theme_minimal()
+
 ```
 
 
