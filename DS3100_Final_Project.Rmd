@@ -67,6 +67,28 @@ sleepPCA <- sleep %>%
   )
 ```
 
+## Discussion of Data
+
+This data was obtained from Kaggle and it presents several helpful variables, all of which are related to sleep. It is unclear where the data first originated from, however, it likely came from a sleep study. Our purpose for the data is to use it to identify our research questions.
+
+Our variables of interest are:
+
+age - the age of a person (continuous)
+
+bmiCategory - BMI of a person (categorical)
+
+dailySteps - Number of steps taken daily by a person (continuous)
+
+qualityOfSleep - Quality of sleep for a person (cateogorical, higher the better)
+
+physicalActivityLevel - Quality of phyical activity a person gets per day (categorical, higher the better)
+
+stressLevel - Stress level of a person (categorical, higher stress level means higher stress)
+
+sleepDuration - Hours of sleep a person gets (continuous)
+
+sleepDisorder - Whether or not a person has a sleep disorder, 1 for yes, 0 for no (Binary)
+
 ## 3A: Visualize Variables (Linear Regression)
 ```{r}
 # Visualizing the predictor variable `age` and the response variable `qualityOfSleep`
@@ -386,4 +408,4 @@ Overall, to answer the research question, we have the following:
 
 Clustering and PCA conclusion:
 
-The PCA results demonstrated that roughly two components can explain 94% of the variation in the data (between the three variables physicalActivityLevel, stressLevel, sleepDuration). The result of the PCA was plotted using the Scree plot where we see dimension 3 is significantly lower than dimensions 1 and 2. Using the rotation matrix of the pca results, we see that PC1 is likely quality of sleep, since it is most explained by sleep duration, and PC2 is likely physical activity level, since it is most explained by physicalActivityLevel. Since the Adjusted Rand Index and Adjusted Mutual Information are relatively low, the clusters derived from behavioral data do not strongly align with diagnosed sleep disorders.
+The PCA results demonstrated that roughly two components can explain 94% of the variation in the data (between the three variables physicalActivityLevel, stressLevel, sleepDuration). The result of the PCA was plotted using the Scree plot where we see dimension 3 is significantly lower than dimensions 1 and 2. Using the rotation matrix of the pca results, we see that PC1 is likely quality of sleep, since it is most explained by sleep duration, and PC2 is likely physical activity level, since it is most explained by physicalActivityLevel. Since the Adjusted Rand Index and Adjusted Mutual Information are relatively low, the clusters derived from behavioral data do not strongly align with diagnosed sleep disorders. From the PCA's results, it can be shown that quality of sleep likely has the highest relationship with developing sleep disorders, however, there is not a strong allignment/fit.
