@@ -23,12 +23,16 @@ In this project, we will be investigating the following research questions:
 
 # Load Packages
 ```{r}
-library(tidyverse)
 library(janitor)
 library(ggplot2)
 library(factoextra)
 library(mclust)
 library(aricode)
+library(MASS)
+library(tidyverse)
+library(ggeffects)
+library(nnet)
+library(patchwork)
 ```
 
 # Load Data, Data Overview, and Basic Data Wrangling
@@ -47,7 +51,7 @@ sapply(sleep, function(x) sum(is.na(x)))
 # Load and clean for Linear Regression Section
 sleepLinear <- sleep %>%
   clean_names(case = "small_camel") %>%
-  select(age, bmiCategory, dailySteps, qualityOfSleep)
+ select(age, bmiCategory, dailySteps, qualityOfSleep)
 
 
 # Load and clean for Logistic Regression Section
@@ -56,15 +60,37 @@ sleepLogistic <- sleep %>%
   mutate(sleepDisorder = as.factor(ifelse(sleepDisorder == "None", "No", "Yes"))) %>%
   select(physicalActivityLevel, stressLevel, sleepDuration, sleepDisorder)
 
+# Load and clean for Multinomial Logistic Regression Section
+sleepMLR <- sleep %>% 
+  clean_names(case = "small_camel") %>%
+  select(sleepDisorder, physicalActivityLevel, stressLevel, sleepDuration) %>%
+  mutate(
+    sleepDisorderMulti = case_when(
+      str_detect(sleepDisorder, regex("apnea", ignore_case = TRUE)) ~ "Sleep Apnea",
+      str_detect(sleepDisorder, regex("insomnia", ignore_case = TRUE)) ~ "Insomnia",
+      str_detect(sleepDisorder, regex("none", ignore_case = TRUE)) ~ "None",
+      TRUE ~ "Other"
+    ),
+    sleepDisorderMulti = factor(sleepDisorderMulti, levels = c("None", "Insomnia", "Sleep Apnea", "Other"))
+  ) %>% 
+  drop_na()
+
 # Load and clean for Ordered Logistic Regression Section
 sleepOLR <- sleep %>%
   clean_names(case = "small_camel") %>%
-  select(bmiCategory, dailySteps, qualityOfSleep, occupation, gender, age)
-
-sleepOLR$qualityOfSleep <- ordered(sleepOLR$qualityOfSleep)
-sleepOLR$bmiCategory <- as.factor(sleepOLR$bmiCategory)
-sleepOLR$occupation <- as.factor(sleepOLR$occupation)
-sleepOLR$gender <- as.factor(sleepOLR$gender)
+  select(bmiCategory, dailySteps, qualityOfSleep, occupation, gender, age) %>%
+  mutate(
+    qualityOfSleep = ordered(qualityOfSleep),
+    bmiCategory = as.factor(bmiCategory),
+    occupation = as.factor(occupation),
+    gender = as.factor(gender)
+  ) %>%
+  mutate(occupation = fct_lump_min(occupation, min = 10, other_level = "Other")) %>%
+  mutate(
+    age = scale(age),
+    dailySteps = scale(dailySteps)
+  ) %>%
+  drop_na()
 
 
 # Load and clean for Advanced Topics Section
@@ -303,7 +329,116 @@ daily_steps_quality_sleep_pearson <- cor(sleepLinear$dailySteps,
 print(daily_steps_quality_sleep_pearson)
 ```
 
-## 7: Advanced Topics
+
+## 7: Multinomial Logistic Regression For Sleep Disorder
+```{r}
+# Fit the model 
+multi_logit <- multinom(
+  sleepDisorderMulti ~ physicalActivityLevel + stressLevel + sleepDuration,
+  data = sleepMLR
+)
+
+multi_logit_summary <- tidy(multi_logit, conf.int = TRUE)
+print(multi_logit_summary)
+```
+
+### Multinomial Logistic Regression Visualization
+```{r}
+# Filter out intercepts for plotting
+coef_plot_df <- multi_logit_summary %>%
+  filter(term != "(Intercept)") %>%
+  mutate(
+    term = recode(term,
+                  physicalActivityLevel = "Physical Activity Level",
+                  stressLevel = "Stress Level",
+                  sleepDuration = "Sleep Duration")
+  )
+
+# Plot: Separate bars for each disorder category vs. None
+ggplot(coef_plot_df, aes(x = estimate, y = term, fill = y.level)) +
+  geom_col(position = position_dodge(width = 0.7), width = 0.6) +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, 
+                 position = position_dodge(width = 0.7)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray40") +
+  labs(
+    title = "Multinomial Logit Coefficients: Sleep Disorder Types",
+    x = "Coefficient Estimate",
+    y = "Predictor",
+    fill = "Disorder vs. None"
+  ) +
+  theme_minimal(base_size = 14)
+
+
+# 1. Predicted probabilities by Stress Level
+pred_probs_stress <- ggeffect(multi_logit, terms = "stressLevel")
+
+p1 <- ggplot(pred_probs_stress, aes(x = x, y = predicted, color = group, fill = group)) +
+  geom_line(size = 1.2) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.15, color = NA) +
+  labs(
+    title = "By Stress Level",
+    x = "Stress Level",
+    y = "Predicted Probability",
+    color = "Disorder",
+    fill = "Disorder"
+  ) +
+  theme_minimal(base_size = 14)
+
+# 2. Predicted probabilities by Physical Activity Level
+pred_probs_activity <- ggeffect(multi_logit, terms = "physicalActivityLevel")
+
+p2 <- ggplot(pred_probs_activity, aes(x = x, y = predicted, color = group, fill = group)) +
+  geom_line(size = 1.2) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.15, color = NA) +
+  labs(
+    title = "By Physical Activity Level",
+    x = "Physical Activity Level",
+    y = "Predicted Probability",
+    color = "Disorder",
+    fill = "Disorder"
+  ) +
+  theme_minimal(base_size = 14)
+
+# Combine the plots side by side
+combined_plot <- p1 + p2 +
+  plot_annotation(title = "Predicted Probability of Sleep Disorder Types")
+
+# Print the combined plot
+print(combined_plot)
+```
+
+
+## 8: Modeling Sleep Quality with Ordered Logistic Regression
+```{r}
+library(scales)
+library(broom)
+
+# Model of the Ordered Logistic Regresion
+sleepQualityOrderLogitRegression <- polr(qualityOfSleep ~ age + bmiCategory + dailySteps + occupation + gender, 
+                                              data=sleepOLR, Hess=TRUE)
+summary(sleepQualityOrderLogitRegression)
+
+# Model Visualization
+## Tidy the model
+sleepQualityOLR_tidy <- broom::tidy(sleepQualityOrderLogitRegression)
+sleepQualityOLR_tidy <- sleepQualityOLR_tidy[!grepl("\\|", sleepQualityOLR_tidy$term), ]
+
+## Plot
+ggplot(sleepQualityOLR_tidy, aes(x = estimate, y = reorder(term, estimate))) +
+  geom_point() +
+  geom_errorbarh(aes(xmin = estimate - std.error, xmax = estimate + std.error), height = 0.2) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Ordered Logistic Regression Coefficients",
+       x = "Coefficient Estimate",
+       y = "Predictor") +
+  theme_minimal()
+```
+
+
+The ordered logistic regression model evaluates the relationship between age, BMI category, daily steps, occupation, and gender with sleep quality. Age shows a strong positive association with better sleep quality (estimate = 4.47, t = 11.96), suggesting that older individuals are significantly more likely to report higher sleep quality levels. In contrast, higher daily steps are modestly associated with lower sleep quality (estimate = –0.35, t = –2.12), though the effect size is small. BMI categories show strong negative impacts: being overweight (estimate = –7.03, t = –9.55) or obese (estimate = –5.43, t = –5.35) is significantly associated with worse sleep quality compared to the baseline BMI group, while normal weight shows no significant difference (t = –0.98). Occupation also plays a role; engineers (estimate = –1.95, t = –2.24), nurses (estimate = –2.02, t = –2.88), and salespeople (estimate = –3.19, t = –2.91) are notably more likely to report poorer sleep compared to the reference occupation. Gender, specifically being male, shows a positive but statistically insignificant effect on sleep quality (estimate = 1.05, t = 1.41). Overall, age and BMI are the strongest predictors in this model, with daily steps and certain occupations also contributing meaningfully to variations in reported sleep quality.
+
+
+## 9: Advanced Topics
 ```{r}
 # PCA
 pca_input <- sleepPCA %>% select(-sleepDisorder)
@@ -343,7 +478,7 @@ print(paste("Adjusted Rand Index (ARI):", round(ari_score, 3)))
 print(paste("Adjusted Mutual Information (AMI):", round(ami_score, 3)))
 ```
 
-## 8: Advanced Topic Visualization
+## 10: Advanced Topic Visualization
 ```{r}
 factoextra::fviz_eig(pca_result)
 
@@ -364,7 +499,7 @@ ggplot(pca_scores, aes(x = PC1, y = PC2, color = cluster)) +
   scale_color_brewer(palette = "Set2")
 ```
 
-## 9: Conclusion
+## 11: Conclusion
 
 Linear and Logistic Regression Conclusion:
 
